@@ -12,14 +12,16 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v6
-      - name: Setup node and pnpm # 更改步骤名称以反映 pnpm 的使用
+      
+      - name: Setup Node.js and pnpm # 步骤名称保持不变
         uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'pnpm' # <-- 关键改动：明确告知 setup-node 使用 pnpm 进行缓存管理
-      
-      - name: Allow pnpm to run build scripts # <-- 新增步骤：解决 ERR_PNPM_IGNORED_BUILDS
+          cache: 'pnpm'
+          install-pnpm: true # <-- 关键改动：确保 pnpm 被安装
+
+      - name: Allow pnpm to run build scripts # 这一步现在应该能够找到 pnpm 命令了
         run: pnpm config set unsafe-perm true
 
       - name: Setup R2-Explorer
@@ -31,11 +33,11 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
       
-      - name: Install and get latest R2-Explorer version # 更改步骤名称
+      - name: Install and get latest R2-Explorer version
         run: |
           cd packages/github-action
-          pnpm install # <-- 关键改动：使用 pnpm install
-          pnpm add r2-explorer@latest # <-- 关键改动：使用 pnpm add 更新包
+          pnpm install
+          pnpm add r2-explorer@latest
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v4
