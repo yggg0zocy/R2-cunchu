@@ -19,27 +19,12 @@ jobs:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
-      # 调试：检查 secret 是否存在且无换行
-      - name: Verify secret exists and is single-line
-        run: |
-          SECRET="${{ secrets.R2EXPLORER_CONFIG_SECRET }}"
-          if [ -z "$SECRET" ]; then
-            echo "::error::R2EXPLORER_CONFIG_SECRET is empty or not set"
-            exit 1
-          fi
-          # 检查是否包含换行符
-          if echo "$SECRET" | grep -q $'\n'; then
-            echo "::warning::Secret contains newline characters. Please compress it to a single line in GitHub Secrets."
-          else
-            echo "✅ Secret exists and is single-line"
-          fi
-
       - name: Setup R2-Explorer
         env:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
-          R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'   # 单引号包裹
+          R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-          # R2EXPLORER_DOMAIN:  # 如果你不需要，请删除此行；若需要，请确保在 Variables 中设置
+          # R2EXPLORER_DOMAIN:  # 已注释掉
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
       
@@ -49,16 +34,15 @@ jobs:
           npm install
           npm install --save r2-explorer@latest
 
-      # ========== 方案A（已优化） ==========
       - name: Deploy with Wrangler Action
-        uses: cloudflare/wrangler-action@v4.0.3   # 使用明确补丁版本，修复已知问题
+        uses: cloudflare/wrangler-action@v4   # 保持不变
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "packages/github-action"
           secrets: |
-            R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'   # 关键：外层加单引号保护 JSON
+            R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'   # 加单引号
           vars: |
             R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
             R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-            R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
+            # R2EXPLORER_DOMAIN:  # 删除这行（因为没有定义）
