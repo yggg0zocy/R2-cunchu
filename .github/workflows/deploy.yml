@@ -11,18 +11,18 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4 # 推荐使用最新稳定版本，例如 @v4
 
       - name: Setup Node.js and pnpm
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4 # <--- 关键改动：将 @v6 改为 @v4
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
-          install-pnpm: true # 确保 pnpm 依然被安装
+          install-pnpm: true # 这个参数现在应该会被正确识别并执行
 
-      - name: Configure pnpm to allow unsafe build scripts globally # <-- 新增步骤
-        run: echo "unsafe-perm=true" > .pnpmrc # 在仓库根目录创建 .pnpmrc 文件
+      - name: Configure pnpm to allow unsafe build scripts globally
+        run: echo "unsafe-perm=true" > .pnpmrc # 保留此步骤，以防 ERR_PNPM_IGNORED_BUILDS
 
       - name: Setup R2-Explorer
         env:
