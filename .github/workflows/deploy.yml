@@ -13,18 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4 # <--- 只安装 Node.js，不依赖其安装 pnpm
+      - name: Setup Node.js and pnpm
+        uses: actions/setup-node@v4.0.3 # <--- 关键改动：使用明确的 v4 补丁版本
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'pnpm' # 仍然可以缓存 Node modules
-
-      - name: Install pnpm manually # <--- 新增步骤：手动安装 pnpm
-        run: npm install -g pnpm
+          cache: 'pnpm' # 保留 pnpm 缓存
+          install-pnpm: true # <--- 关键改动：重新启用此参数，期望 v4.0.3 能够正确识别
 
       - name: Configure pnpm to allow unsafe build scripts via environment variable
-        run: echo "PNPM_CONFIG_UNSAFE_PERM=true" >> $GITHUB_ENV
+        run: echo "PNPM_CONFIG_UNSAFE_PERM=true" >> $GITHUB_ENV # 仍然保留此步骤，以解决 ERR_PNPM_IGNORED_BUILDS 问题
 
       - name: Setup R2-Explorer
         env:
@@ -38,7 +36,7 @@ jobs:
       - name: Install and get latest R2-Explorer version
         run: |
           cd packages/github-action
-          pnpm install
+          pnpm install # 此时 pnpm 应该已经被 setup-node 安装好，且 unsafe-perm 生效
           pnpm add r2-explorer@latest
 
       - name: Deploy
