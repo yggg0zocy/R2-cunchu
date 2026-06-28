@@ -18,20 +18,21 @@ jobs:
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
+          # 注意：没有 cache 和 install-pnpm，避免引入 pnpm
 
       - name: Setup R2-Explorer
         env:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
-          R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'
+          R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'   # 单引号保护 JSON
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-          # R2EXPLORER_DOMAIN:  # 如果未定义，注释掉
+          # 如果你需要 R2EXPLORER_DOMAIN，请在仓库 Variables 中创建，否则删除本行
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
-      
+
       - name: Get latest version
         run: |
           cd packages/github-action
-          npm install
+          npm install          # 只用 npm，不碰 pnpm
           npm install --save r2-explorer@latest
 
       - name: Upload secret manually
@@ -48,8 +49,8 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "packages/github-action"
-          # 注意：不包含 secrets 字段，因为已手动上传
+          # 不包含 secrets 字段，因为已手动上传
           vars: |
             R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
             R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-            # R2EXPLORER_DOMAIN:  # 如果未定义，删除
+            # 如果你需要 R2EXPLORER_DOMAIN，先在 Variables 中定义，再取消注释
