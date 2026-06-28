@@ -11,45 +11,30 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
+      - uses: actions/checkout@v6
+      - name: Setup node
         uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-
       - name: Setup R2-Explorer
         env:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
-          R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'
+          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}   # ← 改这里
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-          # R2EXPLORER_DOMAIN:  # 若未定义，注释掉
+          # R2EXPLORER_DOMAIN: 已删除（未定义）
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
-
       - name: Get latest version
-        run: |
-          cd packages/github-action
-          npm install
-          npm install --save r2-explorer@latest
-
-      - name: Upload secret manually
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          cd packages/github-action
-          echo '${{ secrets.R2EXPLORER_CONFIG_SECRET }}' | npx wrangler secret put R2EXPLORER_CONFIG
-
-      - name: Deploy with Wrangler Action
+        run: cd packages/github-action && npm install && npm install --save r2-explorer@latest
+      - name: Deploy
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "packages/github-action"
-          # secrets 字段已移除（手动上传）
-          vars: |
+          secrets: |                                 # ← 新增，上传 secret
+            R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}
+          vars: |                                    # ← 删除 R2EXPLORER_DOMAIN（未定义）
             R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
             R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-            # R2EXPLORER_DOMAIN:  # 若需要，取消注释并确保 Variables 已定义
