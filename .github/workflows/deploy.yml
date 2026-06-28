@@ -14,22 +14,21 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js and pnpm
-        uses: actions/setup-node@v4.0.3   # 保持原样，或改为 @v4（推荐）
+        uses: actions/setup-node@v6   # 关键：升级到 v6
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
-          install-pnpm: true               # 保留，让 action 自动安装 pnpm
+          install-pnpm: true
 
-      # ---------- 新增：批准所有构建脚本（解决 ERR_PNPM_IGNORED_BUILDS） ----------
+      # 新增：批准构建脚本
       - name: Approve build scripts
         run: pnpm approve-builds --all
 
-      # ---------- 修改：环境变量统一使用 secret ----------
       - name: Setup R2-Explorer
         env:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
-          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}   # 改成 secret
+          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}   # 改用 secret
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
           R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
