@@ -20,8 +20,8 @@ jobs:
       - name: Setup R2-Explorer
         env:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
-          # 确保这一行是 secrets 而不是 vars，并且 Secret 名称正确
-          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_JSON_SECRET }} # <-- 重点检查
+          # 关键修改：将 R2EXPLORER_CONFIG_JSON_SECRET 改为 R2EXPLORER_CONFIG_SECRET
+          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }} 
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
           R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -32,11 +32,11 @@ jobs:
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} 
           workingDirectory: "packages/github-action"
-          # 确保这里的 secrets 配置正确
           secrets: |
-            R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_JSON_SECRET }} # <-- 重点检查
+            # 关键修改：将 R2EXPLORER_CONFIG_JSON_SECRET 改为 R2EXPLORER_CONFIG_SECRET
+            R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }} 
           vars: |
             R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
             R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
