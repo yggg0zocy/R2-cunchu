@@ -34,7 +34,7 @@ jobs:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
           R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'   # 单引号包裹
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-          R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
+          #R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
       
