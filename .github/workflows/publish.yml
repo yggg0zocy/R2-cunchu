@@ -21,26 +21,23 @@ jobs:
           node-version: '24.x'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
       - name: Install dependencies
-        run: pnpm install
+        run: npm install
 
       - name: Check Lint
-        run: pnpm lint
+        run: npm run lint
 
       - name: Build everything
-        run: pnpm build
+        run: npm run build
 
       - name: Validate package
-        run: pnpm --filter r2-explorer publint
+        run: npm run publint
 
       - name: Create Release Pull Request or Publish
         id: changesets
         uses: changesets/action@v1
         with:
-          publish: pnpm release
+          publish: npm run release
           title: 'chore: version packages'
           commit: 'chore: version packages'
         env:
