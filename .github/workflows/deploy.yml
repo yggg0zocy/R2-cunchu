@@ -11,56 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4.0.3 # 确保版本明确
+      - uses: actions/checkout@v6
+      - name: Setup node
+        uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install pnpm globally (⚠️ 必须在 setup-node 后调用，确保 PATH 正确)
-        run: |
-          npm install -g pnpm
-          echo "pnpm is installed globally at: $(which pnpm)"
-
-      - name: Approve build scripts (解决 [ERR_PNPM_IGNORED_BUILDS] 错误)
-        run: |
-          cd packages/github-action
-          echo "Approving build scripts for the following dependencies:"
-          echo "  @biomejs/biome@1.9.4, esbuild@0.14.51, esbuild@0.21.5, esbuild@0.25.12, ..."
-          pnpm approve-builds @biomejs/biome@1.9.4 esbuild@0.14.51 esbuild@0.21.5 esbuild@0.25.12 esbuild@0.25.2 esbuild@0.25.4 esbuild@0.27.0
-
-      - name: Set up pnpm for unsafe perms (解决 ERR_PNPM_IGNORED_BUILDS)
-        run: |
-          echo "PNPM_CONFIG_UNSAFE_PERM=true" >> $GITHUB_ENV
-          echo "Setting up pnpm for unsafe permissions..."
-
       - name: Setup R2-Explorer
         env:
-          R2EXPLORER_WORKER_NAME: ${{ secrets.R2EXPLORER_WORKER_NAME }}
-          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}
-          R2EXPLORER_BUCKETS: ${{ secrets.R2EXPLORER_BUCKETS }}
-          R2EXPLORER_DOMAIN: ${{ secrets.R2EXPLORER_DOMAIN }}
+          R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
+          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}   # ← 唯一改动
+          R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
+          R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
-
-      - name: Install R2-Explorer
-        run: |
-          cd packages/github-action
-          pnpm install
-          pnpm add r2-explorer@latest
-
+      - name: Get latest version
+        run: cd packages/github-action && npm install && npm install --save r2-explorer@latest
       - name: Deploy
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "packages/github-action"
-          secrets: |
-            R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}
-          vars: |
-            R2EXPLORER_WORKER_NAME: ${{ secrets.R2EXPLORER_WORKER_NAME }}
-            R2EXPLORER_BUCKETS: ${{ secrets.R2EXPLORER_BUCKETS }}
-            R2EXPLORER_DOMAIN: ${{ secrets.R2EXPLORER_DOMAIN }}
+          # 注意：这里没有 secrets 和 vars，因为 prepareDeploy.js 已经处理
