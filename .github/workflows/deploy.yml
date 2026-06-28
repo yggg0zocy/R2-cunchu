@@ -12,31 +12,39 @@ jobs:
     name: Deploy
     steps:
       - uses: actions/checkout@v6
-      - name: Setup node
+      - name: Setup node and pnpm # 更改步骤名称以反映 pnpm 的使用
         uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm' # <-- 关键改动：明确告知 setup-node 使用 pnpm 进行缓存管理
+      
+      - name: Allow pnpm to run build scripts # <-- 新增步骤：解决 ERR_PNPM_IGNORED_BUILDS
+        run: pnpm config set unsafe-perm true
+
       - name: Setup R2-Explorer
         env:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
-          # 关键修改：将 R2EXPLORER_CONFIG_JSON_SECRET 改为 R2EXPLORER_CONFIG_SECRET
-          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }} 
+          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
           R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
-      - name: Get latest version
-        run: cd packages/github-action && npm install && npm install --save r2-explorer@latest
+      
+      - name: Install and get latest R2-Explorer version # 更改步骤名称
+        run: |
+          cd packages/github-action
+          pnpm install # <-- 关键改动：使用 pnpm install
+          pnpm add r2-explorer@latest # <-- 关键改动：使用 pnpm add 更新包
+
       - name: Deploy
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} 
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "packages/github-action"
           secrets: |
-            # 关键修改：将 R2EXPLORER_CONFIG_JSON_SECRET 改为 R2EXPLORER_CONFIG_SECRET
-            R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }} 
+            R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}
           vars: |
             R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
             R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
