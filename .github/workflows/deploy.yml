@@ -24,7 +24,7 @@ jobs:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
           R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-          # R2EXPLORER_DOMAIN:  # 已注释掉
+          # R2EXPLORER_DOMAIN:  # 注释掉（如果未定义）
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
         run: node packages/github-action/prepareDeploy.js
       
@@ -34,15 +34,23 @@ jobs:
           npm install
           npm install --save r2-explorer@latest
 
+      # 新增：手动上传 secret（解决 wrangler-action 上传失败）
+      - name: Upload secret manually
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          cd packages/github-action
+          echo '${{ secrets.R2EXPLORER_CONFIG_SECRET }}' | wrangler secret put R2EXPLORER_CONFIG
+
       - name: Deploy with Wrangler Action
-        uses: cloudflare/wrangler-action@v4   # 保持不变
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: "packages/github-action"
-          secrets: |
-            R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'   # 加单引号
+          # secrets 字段已移除（因为已手动上传）
           vars: |
             R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
             R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
-            # R2EXPLORER_DOMAIN:  # 删除这行（因为没有定义）
+            # R2EXPLORER_DOMAIN:  # 如果未定义，请删除
