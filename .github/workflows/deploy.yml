@@ -11,18 +11,20 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy
     steps:
-      - uses: actions/checkout@v4 # 保持 v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js and pnpm
-        uses: actions/setup-node@v4.x # <--- 关键改动：尝试 v4.x
+      - name: Setup Node.js
+        uses: actions/setup-node@v4 # <--- 只安装 Node.js，不依赖其安装 pnpm
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-          cache: 'pnpm'
-          install-pnpm: true # 期望这次会被正确识别
+          cache: 'pnpm' # 仍然可以缓存 Node modules
+
+      - name: Install pnpm manually # <--- 新增步骤：手动安装 pnpm
+        run: npm install -g pnpm
 
       - name: Configure pnpm to allow unsafe build scripts via environment variable
-        run: echo "PNPM_CONFIG_UNSAFE_PERM=true" >> $GITHUB_ENV # 保留此步骤，为后续的 ERR_PNPM_IGNORED_BUILDS 做准备
+        run: echo "PNPM_CONFIG_UNSAFE_PERM=true" >> $GITHUB_ENV
 
       - name: Setup R2-Explorer
         env:
