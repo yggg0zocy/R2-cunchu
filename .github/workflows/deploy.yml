@@ -14,15 +14,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6          # 升级到 v6，解决了 npm 找不到的问题
+        uses: actions/setup-node@v6
         with:
           node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
 
+      # 调试：检查 secret 是否存在
+      - name: Verify secret exists
+        run: |
+          if [ -z "${{ secrets.R2EXPLORER_CONFIG_SECRET }}" ]; then
+            echo "::error::R2EXPLORER_CONFIG_SECRET is empty or not set"
+            exit 1
+          else
+            echo "✅ Secret exists"
+          fi
+
       - name: Setup R2-Explorer
         env:
           R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
-          R2EXPLORER_CONFIG: ${{ secrets.R2EXPLORER_CONFIG_SECRET }}   # 统一使用 secret，与 wrangler-action 保持一致
+          R2EXPLORER_CONFIG: '${{ secrets.R2EXPLORER_CONFIG_SECRET }}'   # 单引号包裹
           R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
           R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
@@ -31,10 +41,11 @@ jobs:
       - name: Get latest version
         run: |
           cd packages/github-action
-          npm install                # 使用 npm，彻底避开 pnpm 的构建脚本问题
+          npm install
           npm install --save r2-explorer@latest
 
-      - name: Deploy
+      # 方案A：让 wrangler-action 处理 secret（如果之前失败，改用下方方案B）
+      - name: Deploy with Wrangler Action
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
@@ -46,3 +57,23 @@ jobs:
             R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
             R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
             R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
+
+      # 方案B（备选）：手动上传 secret + 部署（如果方案A仍然报错）
+      # - name: Upload secret manually
+      #   env:
+      #     CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      #     CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      #   run: |
+      #     cd packages/github-action
+      #     echo "${{ secrets.R2EXPLORER_CONFIG_SECRET }}" | wrangler secret put R2EXPLORER_CONFIG
+      # - name: Deploy with Wrangler
+      #   uses: cloudflare/wrangler-action@v4
+      #   with:
+      #     apiToken: ${{ secrets.CF_API_TOKEN }}
+      #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      #     workingDirectory: "packages/github-action"
+      #     vars: |
+      #       R2EXPLORER_WORKER_NAME: ${{ vars.R2EXPLORER_WORKER_NAME }}
+      #       R2EXPLORER_BUCKETS: ${{ vars.R2EXPLORER_BUCKETS }}
+      #       R2EXPLORER_DOMAIN: ${{ vars.R2EXPLORER_DOMAIN }}
+      #     # 注意：secrets 字段留空，因为已经手动上传了
